@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo } from "react";
 import { BookmarkContext } from "../Context/BookmarkProvider";
-import { BiStar, BiBookmark, BiSearch, BiSort, BiTrash, BiX } from "react-icons/bi";
+import { BiStar, BiBookmark, BiSearch, BiSort, BiTrash, BiX, BiNote } from "react-icons/bi";
 import { FaCodeFork } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import moment from "moment";
@@ -33,7 +33,8 @@ function Bookmarks() {
       filtered = filtered.filter(bookmark =>
         bookmark.name.toLowerCase().includes(query) ||
         bookmark.owner.toLowerCase().includes(query) ||
-        (bookmark.description && bookmark.description.toLowerCase().includes(query))
+        (bookmark.description && bookmark.description.toLowerCase().includes(query)) ||
+        (bookmark.note && bookmark.note.toLowerCase().includes(query)) // Search in notes too
       );
     }
 
@@ -46,9 +47,9 @@ function Bookmarks() {
     filtered.sort((a, b) => {
       switch (sortOrder) {
         case "newest":
-          return new Date(b.created_at) - new Date(a.created_at);
+          return new Date(b.bookmarkedAt || b.created_at || 0) - new Date(a.bookmarkedAt || a.created_at || 0);
         case "oldest":
-          return new Date(a.created_at) - new Date(b.created_at);
+          return new Date(a.bookmarkedAt || a.created_at || 0) - new Date(b.bookmarkedAt || b.created_at || 0);
         case "stars-high":
           return (b.stargazers_count || 0) - (a.stargazers_count || 0);
         case "stars-low":
@@ -95,13 +96,15 @@ function Bookmarks() {
               <span className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-semibold">
                 {bookmarks.length} {bookmarks.length === 1 ? 'bookmark' : 'bookmarks'}
               </span>
-              <button
-                onClick={() => setShowClearConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl font-semibold hover:bg-red-200 transition-colors"
-              >
-                <BiTrash className="text-lg" />
-                Clear All
-              </button>
+              {bookmarks.length > 0 && (
+                <button
+                  onClick={() => setShowClearConfirm(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl font-semibold hover:bg-red-200 transition-colors"
+                >
+                  <BiTrash className="text-lg" />
+                  Clear All
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -142,151 +145,172 @@ function Bookmarks() {
         )}
 
         {/* Search and Filter Section */}
-        <div className="bg-white shadow-xl rounded-3xl p-8 mb-8 border border-purple-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Search Input */}
-            <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Search Bookmarks</label>
+        {bookmarks.length > 0 && (
+          <div className="bg-white shadow-xl rounded-3xl p-8 mb-8 border border-purple-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Search Input */}
               <div className="relative">
-                <BiSearch className="text-2xl absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, owner, or description..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border-2 border-purple-100 rounded-xl bg-purple-50 focus:bg-white focus:ring-3 focus:ring-purple-400 focus:outline-none transition-all duration-300"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <BiX className="text-xl" />
-                  </button>
-                )}
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Search Bookmarks</label>
+                <div className="relative">
+                  <BiSearch className="text-2xl absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, owner, description, or notes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 border-2 border-purple-100 rounded-xl bg-purple-50 focus:bg-white focus:ring-3 focus:ring-purple-400 focus:outline-none transition-all duration-300"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <BiX className="text-xl" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Language Filter */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Language</label>
-              <select
-                value={filterLanguage}
-                onChange={(e) => setFilterLanguage(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-purple-100 rounded-xl bg-purple-50 focus:ring-3 focus:ring-purple-400 focus:outline-none appearance-none"
-              >
-                {languages.map(lang => (
-                  <option key={lang} value={lang}>
-                    {lang === "all" ? "All Languages" : lang}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort Order */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
-              <div className="relative">
-                <BiSort className="text-2xl absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400" />
+              {/* Language Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Language</label>
                 <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border-2 border-purple-100 rounded-xl bg-purple-50 focus:ring-3 focus:ring-purple-400 focus:outline-none appearance-none"
+                  value={filterLanguage}
+                  onChange={(e) => setFilterLanguage(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-purple-100 rounded-xl bg-purple-50 focus:ring-3 focus:ring-purple-400 focus:outline-none appearance-none"
                 >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="stars-high">Most Stars</option>
-                  <option value="stars-low">Fewest Stars</option>
-                  <option value="name-asc">Name A-Z</option>
-                  <option value="name-desc">Name Z-A</option>
+                  {languages.map(lang => (
+                    <option key={lang} value={lang}>
+                      {lang === "all" ? "All Languages" : lang}
+                    </option>
+                  ))}
                 </select>
               </div>
-            </div>
-          </div>
 
-          {/* Results Counter */}
-          {searchQuery || filterLanguage !== "all" ? (
-            <div className="mt-6 pt-6 border-t border-purple-100">
-              <p className="text-purple-600 font-medium">
-                Showing {filteredBookmarks.length} of {bookmarks.length} bookmarks
-                {searchQuery && ` matching "${searchQuery}"`}
-                {filterLanguage !== "all" && ` in ${filterLanguage}`}
-              </p>
+              {/* Sort Order */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+                <div className="relative">
+                  <BiSort className="text-2xl absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400" />
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 border-2 border-purple-100 rounded-xl bg-purple-50 focus:ring-3 focus:ring-purple-400 focus:outline-none appearance-none"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="stars-high">Most Stars</option>
+                    <option value="stars-low">Fewest Stars</option>
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="name-desc">Name Z-A</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          ) : null}
-        </div>
+
+            {/* Results Counter */}
+            {(searchQuery || filterLanguage !== "all") && (
+              <div className="mt-6 pt-6 border-t border-purple-100">
+                <p className="text-purple-600 font-medium">
+                  Showing {filteredBookmarks.length} of {bookmarks.length} bookmarks
+                  {searchQuery && ` matching "${searchQuery}"`}
+                  {filterLanguage !== "all" && ` in ${filterLanguage}`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Bookmarks Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBookmarks.map((repo) => (
-            <div
-              key={repo.id}
-              className="bg-white rounded-2xl shadow-lg border border-purple-100 hover:shadow-xl transition-all duration-300 overflow-hidden group relative"
-            >
-              {/* Delete Button */}
-              <button
-                onClick={(e) => handleRemoveBookmark(e, repo.id)}
-                className="absolute top-4 right-4 p-2 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-200 z-10"
-                title="Remove bookmark"
+        {bookmarks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBookmarks.map((repo) => (
+              <div
+                key={repo._id || repo.id}
+                className="bg-white rounded-2xl shadow-lg border border-purple-100 hover:shadow-xl transition-all duration-300 overflow-hidden group relative"
               >
-                <BiTrash className="text-lg" />
-              </button>
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => handleRemoveBookmark(e, repo._id || repo.id)}
+                  className="absolute top-4 right-4 p-2 bg-red-100 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-200 z-10"
+                  title="Remove bookmark"
+                >
+                  <BiTrash className="text-lg" />
+                </button>
 
-              <Link to={repo.url} target="_blank" className="block h-full">
-                <div className="p-6 h-full flex flex-col">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <img
-                      src={repo.avatar}
-                      alt={repo.owner}
-                      className="h-14 w-14 rounded-full border-2 border-purple-200 group-hover:border-purple-400 transition-colors"
-                    />
-                  </div>
+                <a href={repo.url} target="_blank" rel="noopener noreferrer" className="block h-full">
+                  <div className="p-6 h-full flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <img
+                        src={repo.avatar}
+                        alt={repo.owner}
+                        className="h-14 w-14 rounded-full border-2 border-purple-200 group-hover:border-purple-400 transition-colors"
+                      />
+                    </div>
 
-                  {/* Content */}
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-800 mb-2 group-hover:text-purple-700 transition-colors truncate">
-                      {repo.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                      {repo.description || "No description available"}
-                    </p>
-                    <div className="flex items-center gap-2 mb-4">
-                      {repo.language && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
-                          {repo.language}
-                        </span>
+                    {/* Content */}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg text-gray-800 mb-2 group-hover:text-purple-700 transition-colors truncate">
+                        {repo.name}
+                      </h3>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        {repo.description || "No description available"}
+                      </p>
+                      
+                      {/* Note Display */}
+                      {repo.note && (
+                        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <BiNote className="text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-yellow-800">{repo.note}</p>
+                          </div>
+                        </div>
                       )}
-                      <span className="text-xs text-gray-500">
-                        Updated {moment(repo.updated_at).fromNow()}
+                      
+                      <div className="flex items-center gap-2 mb-4">
+                        {repo.language && (
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                            {repo.language}
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500">
+                          Updated {moment(repo.updated_at || repo.bookmarkedAt).fromNow()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-4 border-t border-purple-100">
+                      <div className="flex items-center gap-4 text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <BiStar className="text-yellow-500" />
+                          <span className="text-sm font-medium">{repo.stargazers_count || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <FaCodeFork className="text-gray-500" />
+                          <span className="text-sm font-medium">{repo.forks_count || 0}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        Bookmarked {moment(repo.bookmarkedAt || repo.created_at).fromNow()}
                       </span>
                     </div>
                   </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-purple-100">
-                    <div className="flex items-center gap-4 text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <BiStar className="text-yellow-500" />
-                        <span className="text-sm font-medium">{repo.stargazers_count || 0}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <FaCodeFork className="text-gray-500" />
-                        <span className="text-sm font-medium">{repo.forks_count || 0}</span>
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-400">
-                      Created {moment(repo.created_at).fromNow()}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
+                </a>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white shadow-xl rounded-3xl p-12 text-center border border-purple-200">
+            <BiBookmark className="text-4xl text-purple-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">No bookmarks yet</h3>
+            <p className="text-gray-600">Start bookmarking repositories to see them here</p>
+          </div>
+        )}
 
         {/* Empty Search Results */}
-        {filteredBookmarks.length === 0 && (searchQuery || filterLanguage !== "all") && (
+        {bookmarks.length > 0 && filteredBookmarks.length === 0 && (searchQuery || filterLanguage !== "all") && (
           <div className="bg-white shadow-xl rounded-3xl p-12 text-center border border-purple-200 mt-8">
             <BiSearch className="text-4xl text-purple-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No matching bookmarks</h3>
