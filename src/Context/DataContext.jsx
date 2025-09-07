@@ -36,7 +36,7 @@ const language =
       order: "desc",
     }).then((res) => {
       setData(res);
-      console.log(res);
+      // console.log(res);
       setLoading(false);
     });
   };
