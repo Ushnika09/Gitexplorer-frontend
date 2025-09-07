@@ -12,7 +12,7 @@ export function BookmarkProvider({ children }) {
     const token = localStorage.getItem("jwt");
     if (token) {
       axios
-        .get("http://localhost:5000/api/bookmarks", {
+        .get("https://gitexplorer-backend-k5h7.onrender.com/api/bookmarks", {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setBookmarks(res.data))
