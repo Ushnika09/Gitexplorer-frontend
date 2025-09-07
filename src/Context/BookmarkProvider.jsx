@@ -23,7 +23,7 @@ export function BookmarkProvider({ children }) {
   const addBookmark = async (repo) => {
     const token = localStorage.getItem("jwt");
     const res = await axios.post(
-      "http://localhost:5000/api/bookmarks",
+      "https://gitexplorer-backend-k5h7.onrender.com/api/bookmarks",
       repo,
       {
         headers: { Authorization: `Bearer ${token}` },
@@ -34,7 +34,7 @@ export function BookmarkProvider({ children }) {
 
   const removeBookmark = async (id) => {
     const token = localStorage.getItem("jwt");
-    await axios.delete(`http://localhost:5000/api/bookmarks/${id}`, {
+    await axios.delete(`https://gitexplorer-backend-k5h7.onrender.com/api/bookmarks/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setBookmarks((prev) => prev.filter((b) => b._id !== id));
@@ -42,7 +42,7 @@ export function BookmarkProvider({ children }) {
 
   const clearAllBookmarks = async () => {
     const token = localStorage.getItem("jwt");
-    await axios.delete("http://localhost:5000/api/bookmarks", {
+    await axios.delete("https://gitexplorer-backend-k5h7.onrender.com/api/bookmarks", {
       headers: { Authorization: `Bearer ${token}` },
     });
     setBookmarks([]);
@@ -52,7 +52,7 @@ export function BookmarkProvider({ children }) {
   const updateBookmark = async (id, updates) => {
     const token = localStorage.getItem("jwt");
     const res = await axios.patch(
-      `http://localhost:5000/api/bookmarks/${id}`,
+      `https://gitexplorer-backend-k5h7.onrender.com/api/bookmarks/${id}`,
       updates,
       {
         headers: { Authorization: `Bearer ${token}` },
