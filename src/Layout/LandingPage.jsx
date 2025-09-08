@@ -95,7 +95,7 @@ function LandingPage() {
                 <FiArrowRight className="text-lg" />
               </Link>
               <Link 
-                to="/explore" 
+                to="/login" 
                 className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-purple-600 font-semibold rounded-xl border border-purple-200 hover:bg-purple-50 transition-colors"
               >
                 Explore Repositories
