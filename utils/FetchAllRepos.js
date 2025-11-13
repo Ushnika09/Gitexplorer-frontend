@@ -102,7 +102,7 @@ function useFetchAllRepos(max = 1000, initialSample = 125) {
     totalForks,
     totalIssues,
     mostUsedLanguage,
-    topLanguages, // <-- added
+    topLanguages, 
   };
 }
 
